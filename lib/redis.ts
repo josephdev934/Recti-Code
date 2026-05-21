@@ -13,7 +13,7 @@ export function getRedisClient(): Redis {
       redisClient = createInMemoryRedis() as any;
     }
   }
-  return redisClient;
+  return redisClient!;
 }
 
 // Create a mock Redis client using Map for development

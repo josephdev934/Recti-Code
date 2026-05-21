@@ -213,7 +213,8 @@ export default function Dashboard() {
   };
 
   // Delete submission
-  const handleDeleteSubmission = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteSubmission = async (id: string | undefined, e: React.MouseEvent) => {
+    if (!id) return;
     e.stopPropagation();
     if (!confirm('Are you sure you want to purge this record?')) return;
 
@@ -649,7 +650,7 @@ export default function Dashboard() {
                                   
                                   {/* Delete trash button */}
                                   <button
-                                    onClick={(e) => handleDeleteSubmission(sub._id, e)}
+                                    onClick={(e) => { if (!sub._id) return; handleDeleteSubmission(sub._id, e); }}
                                     className="p-1.5 text-gray-500 hover:text-red-400 bg-transparent hover:bg-[#ef4444]/10 rounded transition-all cursor-pointer"
                                   >
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -671,17 +672,17 @@ export default function Dashboard() {
                                     {bugsCount} SUGGESTIONS
                                   </span>
                                 )}
-                                {sub.aiResponse?.securityProblems?.length > 0 && (
+                                 {(sub.aiResponse?.securityProblems?.length || 0) > 0 && (
                                   <span className="px-2 py-0.5 bg-[#f87171]/10 text-[#f87171] border border-[#f87171]/20 text-[9px] font-mono font-bold uppercase rounded-md tracking-wider">
                                     SECURITY FIX
                                   </span>
                                 )}
-                                {sub.aiResponse?.performanceIssues?.length > 0 && (
+                                {(sub.aiResponse?.performanceIssues?.length || 0) > 0 && (
                                   <span className="px-2 py-0.5 bg-[#818cf8]/10 text-[#818cf8] border border-[#818cf8]/20 text-[9px] font-mono font-bold uppercase rounded-md tracking-wider">
                                     OPTIMIZATION
                                   </span>
                                 )}
-                                {sub.aiResponse?.architectureSuggestions?.length > 0 && (
+                                {(sub.aiResponse?.architectureSuggestions?.length || 0) > 0 && (
                                   <span className="px-2 py-0.5 bg-[#a78bfa]/10 text-[#a78bfa] border border-[#a78bfa]/20 text-[9px] font-mono font-bold uppercase rounded-md tracking-wider">
                                     REFACTORED
                                   </span>

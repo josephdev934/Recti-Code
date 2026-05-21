@@ -76,7 +76,7 @@ export function getQueue(): Queue<ReviewJob> {
 
 export async function addReviewJob(jobData: ReviewJob): Promise<Job<ReviewJob>> {
   const queue = getQueue();
-  return await queue.add(jobData, {
+  return await queue.add('review', jobData, {
     jobId: jobData.submissionId,
   });
 }
