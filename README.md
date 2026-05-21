@@ -35,21 +35,3 @@ When you submit a snippet or file of code in the **Recti Code** workspace, the s
 3. **Timeline-based Audits History:** Audited snippets are securely stored in **MongoDB** and grouped chronologically under `TODAY`, `YESTERDAY`, and `EARLIER` timelines with interactive badges denoting recommendations, refactoring, and severity levels.
 4. **Smart Rate Limiting:** All incoming audit queries are tracked via an IP rate-limiter, protecting your API limits while ensuring a smooth developer experience.
 
----
-
-## 🚀 Getting Started
-
-1. Set up your environment credentials inside `.env.local`:
-   ```env
-   MONGODB_URI="your_mongodb_connection_uri"
-   GEMINI_API_KEY="your_google_gemini_api_key"
-   JWT_SECRET="your_secure_auth_secret_token"
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the Turbopack development server:
-   ```bash
-   npm run dev
-   ```
