@@ -133,7 +133,7 @@ export default function ReviewMessage({
         <h3 className="text-base font-bold text-(color:--c-f87171)">The review failed</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {submission.errorMessage ||
-            'Something went wrong while analysing this code. This usually clears up if you try again in a moment.'}
+            'Something went wrong while reviewing this code. This usually clears up if you try again in a moment.'}
         </p>
         <button
           onClick={onRetry}

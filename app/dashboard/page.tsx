@@ -268,10 +268,9 @@ export default function Dashboard() {
       const data = await response.json().catch(() => null);
 
       if (!data) {
-        fail(
-          `The server sent back an unexpected response (HTTP ${response.status}). ` +
-            'Check the terminal running "npm run dev" for the error, then try again.'
-        );
+        // Details for developers go to the browser console; the user gets a plain message
+        console.error(`Review request got a non-JSON response (HTTP ${response.status})`);
+        fail('Something went wrong on our side. Please try again in a moment.');
         return;
       }
 
@@ -290,7 +289,7 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Failed to run code review:', error);
-      fail('Could not reach the server. Make sure "npm run dev" is still running, then try again.');
+      fail("We couldn't reach the server. Check your internet connection and try again.");
     }
   };
 

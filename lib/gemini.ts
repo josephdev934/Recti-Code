@@ -53,7 +53,9 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 // Created on first use so that routes that never call the AI don't fail when the key is missing
 export function getGeminiModel(name: string = MODEL_NAMES[0]) {
   if (!GEMINI_API_KEY) {
-    throw new AiReviewError('The Gemini API key is missing. Add GEMINI_API_KEY to .env.local and restart the server.');
+    // The detail is for whoever runs the server; users just see that the service isn't available
+    console.error('GEMINI_API_KEY is not set. Add it to .env.local and restart the server.');
+    throw new AiReviewError('The review service is not available right now. Please try again later.');
   }
   let model = models.get(name);
   if (!model) {
@@ -113,7 +115,7 @@ async function generateText(prompt: string): Promise<string> {
         const status = statusOf(error);
         if (status === 400 || status === 401 || status === 403) {
           console.error('Gemini rejected the request:', error);
-          throw new AiReviewError('Gemini rejected the request. Check that GEMINI_API_KEY in .env.local is valid.');
+          throw new AiReviewError('The review service is not available right now. Please try again later.');
         }
         throw error;
       }

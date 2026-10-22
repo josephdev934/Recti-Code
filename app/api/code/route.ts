@@ -160,14 +160,26 @@ async function handlePOST(request: NextRequest) {
   } catch (error) {
     logger.error('Error submitting code:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to submit code' },
+      { success: false, error: 'We could not process your code right now. Please try again in a moment.' },
       { status: 500 }
     );
   }
 }
 
+// Reviews can take a while (Gemini retries); on serverless hosts this raises the default time limit
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
-  return await rateLimiter(request, () => handlePOST(request));
+  try {
+    return await rateLimiter(request, () => handlePOST(request));
+  } catch (error) {
+    // Whatever goes wrong, the browser must get JSON it can show, never a raw error page
+    logger.error('Unhandled error in POST /api/code:', error);
+    return NextResponse.json(
+      { success: false, error: 'Something went wrong on our side. Please try again in a moment.' },
+      { status: 500 }
+    );
+  }
 }
 
 async function analyzeCodeAndSave(
