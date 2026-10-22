@@ -132,7 +132,8 @@ export default function ReviewMessage({
       <div className="rounded-2xl border border-(color:--c-ef4444)/30 bg-(color:--c-ef4444)/5 p-5 space-y-3 rise-in">
         <h3 className="text-base font-bold text-(color:--c-f87171)">The review failed</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Something went wrong while analysing this code. This usually clears up if you try again in a moment.
+          {submission.errorMessage ||
+            'Something went wrong while analysing this code. This usually clears up if you try again in a moment.'}
         </p>
         <button
           onClick={onRetry}

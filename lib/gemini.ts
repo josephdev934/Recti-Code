@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GEMINI_API_KEY } from '@/config';
-import { AIReview, ExplanationLevel, ReviewFocus } from '@/types';
+import { AIReview, CodeIssue, ExplanationLevel, ReviewFocus, Severity } from '@/types';
 
 // Tried in order. Free-tier quotas are per model, so when one runs out the next can still answer.
 // Override with GEMINI_MODELS="model-a,model-b" in .env.local.
@@ -20,40 +20,161 @@ export class QuotaExceededError extends Error {
   }
 }
 
+/** A failure we can explain to the user in plain words (the message is safe to show). */
+export class AiReviewError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AiReviewError';
+  }
+}
+
+const statusOf = (error: unknown) => (error as { status?: number } | null)?.status;
+
 // 429: out of quota. 404: model retired or not available to this key. Either way, try the next one.
 function isSkippableModelError(error: unknown) {
-  const status = (error as { status?: number } | null)?.status;
+  const status = statusOf(error);
   return status === 429 || status === 404;
 }
+
+// Brief outages on Google's side: worth a quick retry before giving up on a model
+function isTransientError(error: unknown) {
+  const status = statusOf(error);
+  const message = String((error as Error | null)?.message ?? '');
+  return (
+    status === 500 ||
+    status === 503 ||
+    status === 504 ||
+    /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|overloaded|UNAVAILABLE/i.test(message)
+  );
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Created on first use so that routes that never call the AI don't fail when the key is missing
 export function getGeminiModel(name: string = MODEL_NAMES[0]) {
   if (!GEMINI_API_KEY) {
-    throw new Error('Please define the GEMINI_API_KEY environment variable');
+    throw new AiReviewError('The Gemini API key is missing. Add GEMINI_API_KEY to .env.local and restart the server.');
   }
   let model = models.get(name);
   if (!model) {
-    model = new GoogleGenerativeAI(GEMINI_API_KEY).getGenerativeModel({ model: name });
+    model = new GoogleGenerativeAI(GEMINI_API_KEY).getGenerativeModel({
+      model: name,
+      // JSON mode: the model must return valid JSON, even when the fixes contain quotes and newlines.
+      // The default output limit is small enough to cut a long review off mid-answer.
+      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 16384 },
+    });
     models.set(name, model);
   }
   return model;
 }
 
 async function generateText(prompt: string): Promise<string> {
+  let sawQuota = false;
+  let sawOutage = false;
   let lastError: unknown;
+
   for (const name of MODEL_NAMES) {
-    try {
-      const chatSession = getGeminiModel(name).startChat({ history: [] });
-      const result = await chatSession.sendMessage(prompt);
-      return result.response.text();
-    } catch (error) {
-      if (!isSkippableModelError(error)) throw error;
-      console.warn(`Gemini model ${name} unavailable (quota or retired), trying next model`);
-      lastError = error;
+    // up to 3 tries per model for short outages (waits 1s, then 3s)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const chatSession = getGeminiModel(name).startChat({ history: [] });
+        const result = await chatSession.sendMessage(prompt);
+
+        if (result.response.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+          throw new AiReviewError(
+            'The review was too long to finish. Try a shorter snippet, or pick a single focus (Security, Performance or Readability).'
+          );
+        }
+        try {
+          return result.response.text();
+        } catch {
+          // text() throws when Gemini blocks the answer
+          throw new AiReviewError('Gemini declined to review this code. Try a different snippet.');
+        }
+      } catch (error) {
+        if (error instanceof AiReviewError) throw error;
+        lastError = error;
+
+        if (isSkippableModelError(error)) {
+          sawQuota = sawQuota || statusOf(error) === 429;
+          console.warn(`Gemini model ${name} unavailable (quota or retired), trying next model`);
+          break; // next model
+        }
+        if (isTransientError(error)) {
+          sawOutage = true;
+          if (attempt < 2) {
+            await sleep(attempt === 0 ? 1000 : 3000);
+            continue;
+          }
+          console.warn(`Gemini model ${name} kept failing, trying next model`);
+          break; // next model
+        }
+
+        const status = statusOf(error);
+        if (status === 400 || status === 401 || status === 403) {
+          console.error('Gemini rejected the request:', error);
+          throw new AiReviewError('Gemini rejected the request. Check that GEMINI_API_KEY in .env.local is valid.');
+        }
+        throw error;
+      }
     }
   }
-  console.error('All Gemini models are out of quota:', lastError);
-  throw new QuotaExceededError();
+
+  console.error('No Gemini model could answer:', lastError);
+  if (sawQuota) throw new QuotaExceededError();
+  if (sawOutage) throw new AiReviewError('Gemini is busy right now. Please try again in a moment.');
+  throw new AiReviewError('The AI review failed. Please try again.');
+}
+
+const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low'];
+
+function toIssues(value: unknown): CodeIssue[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+    .map((item) => ({
+      issue: String(item.issue ?? '').trim(),
+      fix: String(item.fix ?? ''),
+      severity: SEVERITIES.includes(item.severity as Severity) ? (item.severity as Severity) : undefined,
+      line: Number.isInteger(item.line) && (item.line as number) > 0 ? (item.line as number) : undefined,
+    }))
+    .filter((issue) => issue.issue.length > 0);
+}
+
+// Turns whatever the model sent into a review the UI can always render
+function parseReview(text: string): AIReview {
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(cleaned);
+  } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        raw = JSON.parse(match[0]);
+      } catch {
+        // fall through to the error below
+      }
+    }
+  }
+
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new AiReviewError('The AI sent back an answer that could not be read. Please try again.');
+  }
+
+  const r = raw as Record<string, unknown>;
+  const score = Number(r.overallScore);
+  return {
+    bugs: toIssues(r.bugs),
+    performanceIssues: toIssues(r.performanceIssues),
+    securityProblems: toIssues(r.securityProblems),
+    bestPractices: toIssues(r.bestPractices),
+    architectureSuggestions: toIssues(r.architectureSuggestions),
+    overallScore: Number.isFinite(score) ? Math.min(10, Math.max(0, score)) : 5,
+    explanation: typeof r.explanation === 'string' && r.explanation.trim() ? r.explanation.trim() : undefined,
+    summary: typeof r.summary === 'string' && r.summary.trim() ? r.summary.trim() : 'No summary was provided.',
+  };
 }
 
 const FOCUS_INSTRUCTIONS: Record<ReviewFocus, string> = {
@@ -177,13 +298,7 @@ Respond ONLY with the JSON object, no additional text.
   try {
     const text = await generateText(prompt);
 
-    // Parse the JSON response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return applyFocus(JSON.parse(jsonMatch[0]) as AIReview, focus);
-    }
-
-    throw new Error('Invalid response format from AI');
+    return applyFocus(parseReview(text), focus);
   } catch (error) {
     console.error('Error analyzing code:', error);
     throw error;

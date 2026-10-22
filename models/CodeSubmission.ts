@@ -28,6 +28,10 @@ const codeSubmissionSchema = new mongoose.Schema({
     enum: ['all', 'security', 'performance', 'readability'],
     default: 'all'
   },
+  errorMessage: {
+    type: String,
+    default: null
+  },
   aiResponse: {
     type: Object,
     default: null

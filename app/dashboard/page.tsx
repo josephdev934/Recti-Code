@@ -245,14 +245,11 @@ export default function Dashboard() {
       updatedAt: now,
     });
 
-    // If the request never gets through, put the code back so nothing is lost
-    const restore = () => {
-      setCurrentSubmission(null);
+    // Show what went wrong inside the conversation (with a Retry button) instead of a pop-up.
+    // The code stays in the thread, so Retry never needs it typed again.
+    const fail = (message: string) => {
+      setCurrentSubmission((prev) => (prev ? { ...prev, status: 'failed', errorMessage: message } : prev));
       setIsSubmitting(false);
-      if (fromComposer) {
-        setCode(input.code);
-        setFilename(input.filename);
-      }
     };
 
     try {
@@ -267,7 +264,16 @@ export default function Dashboard() {
           level: input.level,
         }),
       });
-      const data = await response.json();
+      // A crashed route sends back an HTML error page, not JSON
+      const data = await response.json().catch(() => null);
+
+      if (!data) {
+        fail(
+          `The server sent back an unexpected response (HTTP ${response.status}). ` +
+            'Check the terminal running "npm run dev" for the error, then try again.'
+        );
+        return;
+      }
 
       if (data.success) {
         const newSubmission: CodeSubmission = data.data;
@@ -276,13 +282,15 @@ export default function Dashboard() {
         // Guest reviews come back finished, so there is nothing to poll for
         if (newSubmission.status !== 'processing') setIsSubmitting(false);
       } else {
-        alert(`Review request rejected: ${data.error}`);
-        restore();
+        fail(
+          data.retryAfter
+            ? `${data.error}. Please try again in ${data.retryAfter} seconds.`
+            : data.error || 'The review request was rejected. Please try again.'
+        );
       }
     } catch (error) {
       console.error('Failed to run code review:', error);
-      alert('Analysis connection error. Please try again.');
-      restore();
+      fail('Could not reach the server. Make sure "npm run dev" is still running, then try again.');
     }
   };
 

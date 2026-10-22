@@ -144,7 +144,7 @@ export default function Dropdown({
           role="listbox"
           aria-label={ariaLabel}
           tabIndex={-1}
-          className={`glass-surface absolute z-50 min-w-full w-max max-h-72 overflow-y-auto rounded-xl p-1.5 rise-in ${
+          className={`absolute z-50 min-w-full w-max max-h-72 overflow-y-auto rounded-xl border border-border bg-card p-1.5 shadow-xl shadow-black/20 rise-in ${
             placement === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'
           }`}
         >

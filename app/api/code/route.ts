@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { CodeSubmission } from '@/models/CodeSubmission';
-import { analyzeCode, QuotaExceededError } from '@/lib/gemini';
+import { analyzeCode, AiReviewError, QuotaExceededError } from '@/lib/gemini';
 import { getCachedReview, cacheReview } from '@/lib/cache';
 import { getOptionalUser } from '@/middleware/withAuth';
 import { rateLimit } from '@/middleware/rateLimit';
@@ -62,6 +62,12 @@ async function handlePOST(request: NextRequest) {
             return NextResponse.json(
               { success: false, error: error.message },
               { status: 429 }
+            );
+          }
+          if (error instanceof AiReviewError) {
+            return NextResponse.json(
+              { success: false, error: error.message },
+              { status: 502 }
             );
           }
           return NextResponse.json(
@@ -198,9 +204,14 @@ async function analyzeCodeAndSave(
   } catch (error) {
     logger.error(`AI review failed for submission ${submissionId}:`, error);
 
-    // Update submission status to failed
+    // Update submission status to failed, with a reason the user can read
+    const errorMessage =
+      error instanceof QuotaExceededError || error instanceof AiReviewError
+        ? error.message
+        : 'The AI review failed. Please try again.';
     await CodeSubmission.findByIdAndUpdate(submissionId, {
       status: 'failed',
+      errorMessage,
     });
 
     throw error;

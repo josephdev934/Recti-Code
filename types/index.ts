@@ -7,6 +7,8 @@ export interface CodeSubmission {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   /** Which focus the review was run with (older saved reviews don't have one) */
   focus?: ReviewFocus;
+  /** Why a review failed, in words the user can read */
+  errorMessage?: string | null;
   aiResponse: AIReview | null;
   createdAt: Date;
   updatedAt: Date;
