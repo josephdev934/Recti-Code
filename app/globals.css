@@ -1,18 +1,154 @@
 @import "tailwindcss";
 
+/*
+  Theme: light by default, dark when <html class="dark"> (toggled by ThemeToggle, saved in localStorage).
+  Colours are variables so the same markup renders in both. The --c-xxxxxx names are the original
+  dark hex values; the light set below maps each one to its light-mode counterpart.
+*/
 :root {
+  color-scheme: light;
+
+  /* shadcn-style semantic tokens */
+  --background: #f6f7fb;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #eef0f6;
+  --muted-foreground: #5a6478;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --border: #dfe3ec;
+  --ring: #6366f1;
+
+  /* text / overlays that flip with the theme */
+  --ink: #0f172a;
+  --on-accent: #ffffff;
+
+  /* glass surfaces */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(15, 23, 42, 0.10);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  --card-bg: #ffffff;
+  --border-color: #dfe3ec;
+
+  --c-060910: #f1f3f9;
+  --c-06b6d4: #0891b2;
+  --c-080b11: #f6f7fb;
+  --c-090d16: #eef0f6;
+  --c-0d121f: #ffffff;
+  --c-0f172a: #ffffff;
+  --c-10b981: #059669;
+  --c-111827: #eef0f6;
+  --c-1e293b: #dfe3ec;
+  --c-334155: #94a3b8;
+  --c-34d399: #059669;
+  --c-3b82f6: #2563eb;
+  --c-475569: #64748b;
+  --c-4f46e5: #3730a3;
+  --c-60a5fa: #2563eb;
+  --c-6366f1: #4338ca;
+  --c-64748b: #5a6478;
+  --c-818cf8: #4f46e5;
+  --c-94a3b8: #475569;
+  --c-a5b4fc: #6366f1;
+  --c-c7d2fe: #4338ca;
+  --c-cbd5e1: #334155;
+  --c-e2e8f0: #1e293b;
+  --c-eab308: #a16207;
+  --c-ef4444: #dc2626;
+  --c-f1f5f9: #0f172a;
+  --c-f87171: #dc2626;
+  --c-f97316: #ea580c;
+  --c-facc15: #a16207;
+  --c-fb923c: #c2410c;
+  --c-fbbf24: #b45309;
+}
+
+.dark {
+  color-scheme: dark;
+
   --background: #0b0f19;
   --foreground: #f8fafc;
+  --card: #0d121f;
+  --card-foreground: #e2e8f0;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --primary: #818cf8;
+  --primary-foreground: #0f172a;
+  --border: #1e293b;
+  --ring: #818cf8;
+
+  --ink: #ffffff;
+  --on-accent: #ffffff;
+
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
   --card-bg: #111827;
   --border-color: #1f2937;
+
+  --c-060910: #060910;
+  --c-06b6d4: #06b6d4;
+  --c-080b11: #080b11;
+  --c-090d16: #090d16;
+  --c-0d121f: #0d121f;
+  --c-0f172a: #0f172a;
+  --c-10b981: #10b981;
+  --c-111827: #111827;
+  --c-1e293b: #1e293b;
+  --c-334155: #334155;
+  --c-34d399: #34d399;
+  --c-3b82f6: #3b82f6;
+  --c-475569: #475569;
+  --c-4f46e5: #4f46e5;
+  --c-60a5fa: #60a5fa;
+  --c-6366f1: #6366f1;
+  --c-64748b: #64748b;
+  --c-818cf8: #818cf8;
+  --c-94a3b8: #94a3b8;
+  --c-a5b4fc: #a5b4fc;
+  --c-c7d2fe: #c7d2fe;
+  --c-cbd5e1: #cbd5e1;
+  --c-e2e8f0: #e2e8f0;
+  --c-eab308: #eab308;
+  --c-ef4444: #ef4444;
+  --c-f1f5f9: #f1f5f9;
+  --c-f87171: #f87171;
+  --c-f97316: #f97316;
+  --c-facc15: #facc15;
+  --c-fb923c: #fb923c;
+  --c-fbbf24: #fbbf24;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
 }
 
 body {
-  background-color: #080b11;
-  color: #e2e8f0;
+  background-color: var(--c-080b11);
+  color: var(--c-e2e8f0);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
+/* Glass surface (the chat composer) */
+.glass-surface {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
 /* Custom glassmorphism utilities */
 .glass-panel {
   background: rgba(17, 24, 39, 0.7);
@@ -40,16 +176,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #080b11;
+  background: var(--c-080b11);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
+  background: var(--c-1e293b);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: var(--c-334155);
 }
 
 /* Terminal text typing cursor effect */
@@ -78,4 +214,51 @@ body {
   animation: scan 2s linear infinite;
   background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.5), transparent);
 }
+
+/* Chat review UI */
+@keyframes fan-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -4px; }
+}
+
+.fan-float {
+  animation: fan-float 2.4s ease-in-out infinite;
+}
+
+@keyframes bar-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+
+.bar-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.bar-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(165, 180, 252, 0.55), transparent);
+  animation: bar-shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rise-in {
+  animation: rise-in 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fan-float,
+  .rise-in,
+  .bar-shimmer::after {
+    animation: none !important;
+  }
+}
+
 

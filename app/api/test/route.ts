@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { CodeSubmission } from '@/models/CodeSubmission';
-import { geminiModel } from '@/lib/gemini';
+import { pingGemini } from '@/lib/gemini';
 
 export async function GET() {
   const results: {
@@ -16,25 +16,22 @@ export async function GET() {
   try {
     await dbConnect();
     const count = await CodeSubmission.countDocuments();
-    results.mongodb = { 
-      status: '✅ Connected', 
+    results.mongodb = {
+      status: '✅ Connected',
       error: null,
       details: `Database has ${count} submissions`
     };
   } catch (error: any) {
-    results.mongodb = { 
-      status: '❌ Failed', 
-      error: error.message 
+    results.mongodb = {
+      status: '❌ Failed',
+      error: error.message
     };
   }
 
   // Test Gemini API
   try {
-    const chatSession = geminiModel.startChat({ history: [] });
-    const result = await chatSession.sendMessage('Say "Hello" if you can read this');
-    const response = result.response;
-    const text = response.text();
-    
+    const text = await pingGemini();
+
     results.gemini = {
       status: '✅ Connected',
       error: null,

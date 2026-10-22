@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import LoginForm from '@/components/LoginForm';
 import RegisterForm from '@/components/RegisterForm';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
-    <main className="min-h-screen bg-[#080b11]">
+    <main className="relative min-h-screen bg-(color:--c-080b11)">
+      <ThemeToggle className="absolute top-4 right-4 z-10" />
       {isLogin ? (
         <LoginForm onSwitchToRegister={() => setIsLogin(false)} />
       ) : (
@@ -17,4 +19,3 @@ export default function AuthPage() {
     </main>
   );
 }
-

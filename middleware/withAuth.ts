@@ -5,6 +5,22 @@ export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;
 }
 
+/**
+ * For routes that work for both guests and signed-in users.
+ * No Authorization header -> guest (user: null). A header with a bad/expired token -> invalid: true.
+ */
+export function getOptionalUser(req: NextRequest): { user: JWTPayload | null; invalid: boolean } {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { user: null, invalid: false };
+  }
+  try {
+    return { user: verifyToken(authHeader.substring(7)), invalid: false };
+  } catch {
+    return { user: null, invalid: true };
+  }
+}
+
 export function withAuth(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse>
 ) {

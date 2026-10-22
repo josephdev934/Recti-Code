@@ -34,26 +34,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem('user');
 
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+      } catch {
+        // Corrupted storage would otherwise crash the whole app on load
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
     
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  // Network failures and non-JSON responses (e.g. an HTML 500 page) become readable errors
+  const postAuth = async (url: string, payload: object, fallbackError: string) => {
+    let response: Response;
     try {
-      const response = await fetch('/api/auth/login', {
+      response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
+    } catch {
+      throw new Error('Could not reach the server. Check your connection and try again.');
+    }
 
-      const data = await response.json();
+    const data = await response.json().catch(() => null);
+    if (!data) {
+      throw new Error('The server returned an unexpected response. Please try again.');
+    }
+    if (!data.success) {
+      throw new Error(data.error || fallbackError);
+    }
+    return data;
+  };
 
-      if (!data.success) {
-        throw new Error(data.error || 'Login failed');
-      }
+  const login = async (email: string, password: string) => {
+    try {
+      const data = await postAuth('/api/auth/login', { email, password }, 'Login failed');
 
       setToken(data.data.token);
       setUser(data.data.user);
@@ -70,17 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Registration failed');
-      }
+      const data = await postAuth('/api/auth/register', { name, email, password }, 'Registration failed');
 
       setToken(data.data.token);
       setUser(data.data.user);

@@ -1,18 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { NextResponse } from 'next/server';
 import { GEMINI_API_KEY } from '@/config';
 
+// Lists the Gemini models available to the configured API key
 export async function GET() {
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    
-    // List available models
+    if (!GEMINI_API_KEY) {
+      return NextResponse.json({
+        success: false,
+        error: 'Please define the GEMINI_API_KEY environment variable'
+      });
+    }
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
     );
-    
+
     const data = await response.json();
-    
+
     return NextResponse.json({
       success: true,
       models: data.models?.map((m: any) => ({

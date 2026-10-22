@@ -7,11 +7,13 @@ const DEFAULT_TTL = 60 * 60 * 24; // 24 hours in seconds
 export interface CacheKey {
   code: string;
   language: string;
+  focus?: string;
+  level?: string;
 }
 
 export function generateCacheKey(key: CacheKey): string {
   const hash = require('crypto').createHash('md5');
-  hash.update(`${key.language}:${key.code}`);
+  hash.update(`${key.language}:${key.focus ?? 'all'}:${key.level ?? 'intermediate'}:${key.code}`);
   return `${CACHE_PREFIX}${hash.digest('hex')}`;
 }
 

@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 import { MONGODB_URI } from '@/config';
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
-}
-
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -12,6 +8,12 @@ if (!cached) {
 }
 
 async function dbConnect() {
+  // Checked here, not at import time, so routes that don't need the database
+  // (guest reviews) keep working when MONGODB_URI isn't configured
+  if (!MONGODB_URI) {
+    throw new Error('Please define the MONGODB_URI environment variable');
+  }
+
   if (cached.conn) {
     return cached.conn;
   }

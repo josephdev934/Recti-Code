@@ -6,16 +6,25 @@ import logger from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, password } = body;
+    const body = await req.json().catch(() => null);
 
-    // Validate input
-    if (!email || !password) {
+    // Validate input (strings only, to block NoSQL operator injection like { "$ne": null })
+    if (
+      !body ||
+      typeof body.email !== 'string' ||
+      typeof body.password !== 'string' ||
+      !body.email.trim() ||
+      !body.password
+    ) {
       return NextResponse.json(
         { success: false, error: 'Email and password are required' },
         { status: 400 }
       );
     }
+
+    // The schema stores emails lowercased and trimmed, so look them up the same way
+    const email = body.email.trim().toLowerCase();
+    const password: string = body.password;
 
     await dbConnect();
 

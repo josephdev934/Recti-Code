@@ -23,6 +23,11 @@ const codeSubmissionSchema = new mongoose.Schema({
     enum: ['pending', 'processing', 'completed', 'failed'],
     default: 'pending'
   },
+  focus: {
+    type: String,
+    enum: ['all', 'security', 'performance', 'readability'],
+    default: 'all'
+  },
   aiResponse: {
     type: Object,
     default: null

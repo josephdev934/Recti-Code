@@ -28,6 +28,41 @@ export function getLanguageIcon(language: string): string {
   return icons[language.toLowerCase()] || icons.other;
 }
 
+// Official language logos from the Devicon set (https://devicon.dev), served from jsDelivr.
+// Pinned to a release tag so the icons can't change or disappear underneath us.
+const DEVICON_BASE = 'https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons';
+
+const DEVICON_NAMES: Record<string, string> = {
+  javascript: 'javascript',
+  typescript: 'typescript',
+  python: 'python',
+  java: 'java',
+  cpp: 'cplusplus',
+  csharp: 'csharp',
+  go: 'go',
+  rust: 'rust',
+  php: 'php',
+  ruby: 'ruby',
+  swift: 'swift',
+  kotlin: 'kotlin',
+  html: 'html5',
+  css: 'css3',
+  sql: 'mysql',
+  shell: 'bash',
+  bash: 'bash',
+  json: 'json',
+  xml: 'xml',
+  markdown: 'markdown',
+  yaml: 'yaml',
+  dockerfile: 'docker',
+};
+
+/** URL of the language's logo, or null for languages without one (e.g. "other"). */
+export function getLanguageIconUrl(language: string): string | null {
+  const name = DEVICON_NAMES[language.toLowerCase()];
+  return name ? `${DEVICON_BASE}/${name}/${name}-original.svg` : null;
+}
+
 export function getLanguageColor(language: string): string {
   const colors: Record<string, string> = {
     javascript: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
